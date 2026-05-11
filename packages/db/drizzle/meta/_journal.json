@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778542579832,
+      "tag": "0000_wet_rocket_raccoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1778542634201,
+      "tag": "0001_auth_and_rls",
+      "breakpoints": true
+    }
+  ]
+}

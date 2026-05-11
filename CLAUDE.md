@@ -30,8 +30,9 @@ The build runs in 10 stages over multiple sessions:
 9. **MCP server** — pack resources/tools exposed via MCP
 10. **Production readiness** — SOC 2, HIPAA, observability, load testing
 
-Current state: **Phase 1.1 (monorepo scaffolding) complete.** Phase 1.2 (Supabase
-schema + auth) blocked on user creating Supabase project.
+Current state: **Stage 1 code-complete locally** (Phases 1.1–1.4: monorepo,
+schema, RLS, auth, multi-tenancy, audit logging). Migration run + Vercel deploy
+blocked on user supplying Supabase DB password + secret key.
 
 ## Architecture (high level)
 
@@ -187,9 +188,15 @@ attempted-state captured). Don't bypass it.
 
 ## What's blocked on the user
 
-- Supabase project creation (Phase 1.2)
-- GitHub remote (manual `gh repo create` or web UI)
-- Vercel project deploy (needs Vercel CLI login + GitHub auth)
+- **Supabase DB password** to fill `DATABASE_URL` / `DIRECT_DATABASE_URL` (the
+  user pasted the template with `[YOUR-PASSWORD]` placeholder).
+- **Supabase service / secret key** (`sb_secret_*`) — only the publishable key
+  was provided so far. Required for server-side ops that bypass RLS.
+- **Pooler connection string** — the direct (5432) was provided; need the
+  pooler (6543) string for app queries.
+- **GitHub remote URL** to push `main` (Vercel projects are linked but won't
+  build until the repo is pushed and webhooks fire).
+- **Vercel env vars** to be set via `vercel env add` once we have the secrets.
 - Anthropic + OpenAI + Resend API keys (Phases 2.4 / 3.2 / 4 / 5)
 
 ## Decision log
@@ -203,3 +210,16 @@ attempted-state captured). Don't bypass it.
   limit hot paths, enterprise SSO, error volume) actually appears.
 - **2026-05-11** — Tailwind v4 (beta) chosen over v3. CSS-first config is
   simpler for a multi-app monorepo and works fine with shadcn/ui.
+- **2026-05-11** — Public `users` table mirrors `auth.users` via a trigger
+  (`handle_new_auth_user`) defined in migration `0001_auth_and_rls.sql`. App
+  code never writes to `users` directly — the trigger keeps it in sync.
+- **2026-05-11** — RLS helper functions `is_member_of(org)` and
+  `has_role_at_least(org, role)` are `SECURITY DEFINER` to avoid recursive
+  policy evaluation on `organization_members`. App code uses the same role
+  ladder (member=1, admin=2, owner=3) in `hasRoleAtLeast()`.
+- **2026-05-11** — `audit_log` has no INSERT/UPDATE/DELETE RLS policies — all
+  writes go through the service-role connection in `withAudit()`. Reads are
+  scoped to admin+ via the SELECT policy.
+- **2026-05-11** — Active org cookie: `hyperspeed_org_id` (httpOnly, lax,
+  one-year maxAge). Stored separately from the Supabase session cookies so
+  it survives sign-out/sign-in cycles within the same browser.
