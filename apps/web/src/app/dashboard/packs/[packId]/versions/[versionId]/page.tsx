@@ -71,13 +71,23 @@ export default async function VersionDetailPage({ params }: PageProps) {
                 : ' not yet published'}
             </p>
           </div>
-          {canEdit ? (
-            <VersionLifecycleControls
-              versionId={versionId}
-              status={join.version.status}
-              entryCount={entries.length}
-            />
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            {canEdit && (join.version.status === 'draft' || join.version.status === 'in_review') ? (
+              <Link
+                href={`/dashboard/packs/${packId}/versions/${versionId}/edit`}
+                className="rounded-md border border-[var(--color-border-base)] bg-white px-3 py-1.5 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-pale)]"
+              >
+                Edit entries
+              </Link>
+            ) : null}
+            {canEdit ? (
+              <VersionLifecycleControls
+                versionId={versionId}
+                status={join.version.status}
+                entryCount={entries.length}
+              />
+            ) : null}
+          </div>
         </div>
         {join.version.changelog ? (
           <p className="mt-3 whitespace-pre-wrap rounded-lg border border-[var(--color-border-base)] bg-white p-3 text-sm text-[var(--color-ink)]">
