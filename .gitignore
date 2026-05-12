@@ -44,3 +44,4 @@ drizzle/meta/
 
 # Misc
 *.local
+apps/api/api/index.js
