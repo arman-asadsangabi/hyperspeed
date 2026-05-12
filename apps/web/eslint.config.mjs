@@ -3,9 +3,7 @@ import tseslint from 'typescript-eslint'
 import prettier from 'eslint-config-prettier'
 
 export default tseslint.config(
-  {
-    ignores: ['.next', '.turbo', 'node_modules', 'next-env.d.ts'],
-  },
+  { ignores: ['.next', '.turbo', '.vercel', 'node_modules', 'next-env.d.ts'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   ...tseslint.configs.stylistic,

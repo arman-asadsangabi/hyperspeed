@@ -43,3 +43,36 @@ export const auditLogFilterSchema = z.object({
   to: z.coerce.date().optional(),
   ...paginationSchema.shape,
 })
+
+// -----------------------------------------------------------------------------
+// Stage 2 — Pack data model
+// -----------------------------------------------------------------------------
+
+export const createPackSchema = z.object({
+  name: z.string().min(2).max(120),
+  slug: slugSchema,
+  description: z.string().max(2000).optional(),
+  categoryId: uuidSchema.optional(),
+  targetUseCase: z.string().max(500).optional(),
+})
+export type CreatePackInput = z.infer<typeof createPackSchema>
+
+export const updatePackSchema = createPackSchema.partial()
+export type UpdatePackInput = z.infer<typeof updatePackSchema>
+
+export const listPacksFilterSchema = z.object({
+  archived: z
+    .union([z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
+  categoryId: uuidSchema.optional(),
+  q: z.string().max(120).optional(),
+  ...paginationSchema.shape,
+})
+
+export const createPackVersionSchema = z.object({
+  basedOnVersionId: uuidSchema.optional(),
+  changelogType: z.enum(['major', 'minor', 'patch']).default('patch'),
+  changelog: z.string().max(2000).optional(),
+})
+export type CreatePackVersionInput = z.infer<typeof createPackVersionSchema>

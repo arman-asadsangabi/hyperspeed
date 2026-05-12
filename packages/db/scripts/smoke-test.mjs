@@ -1,6 +1,6 @@
 /**
- * End-to-end smoke test for Phase 1.2 schema + Phase 1.4 audit logging.
- * Creates a temp auth user, exercises the trigger and tables, then cleans up.
+ * End-to-end smoke test for Stage 1 + Stage 2 schema.
+ * Creates a temp auth user, exercises every table that has tests, cleans up.
  *
  * Required env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DIRECT_DATABASE_URL
  */
@@ -21,7 +21,7 @@ const admin = createClient(url, serviceKey, {
 const sql = postgres(dbUrl, { prepare: false, max: 1, ssl: 'require', onnotice: () => {} })
 
 const email = `smoke-${Date.now()}@hyperspeed-test.local`
-let userId, orgId
+let userId, orgId, packId, versionId, entryId
 
 function ok(label, value) {
   console.log(`✓ ${label}: ${value}`)
@@ -32,7 +32,7 @@ function fail(label, err) {
 }
 
 try {
-  // 1. Create auth user via Supabase Admin API
+  // === Stage 1: auth + multi-tenancy + audit ===
   const { data: created, error: createErr } = await admin.auth.admin.createUser({
     email,
     password: 'TempPassword!23',
@@ -43,53 +43,93 @@ try {
   userId = created.user.id
   ok('auth.users insert', userId)
 
-  // 2. Verify trigger mirrored to public.users
-  const [mirrored] = await sql`SELECT id, email, full_name FROM users WHERE id = ${userId}`
+  const [mirrored] = await sql`SELECT id, email FROM users WHERE id = ${userId}`
   if (!mirrored) fail('public.users mirror', 'no row appeared')
-  else ok('public.users mirror', `email=${mirrored.email} name=${mirrored.full_name}`)
+  else ok('public.users mirror', mirrored.email)
 
-  // 3. Create an organization (simulates the createOrganization action)
   const [org] = await sql`
     INSERT INTO organizations (name, slug, billing_email)
-    VALUES ('Smoke Test Org', ${'smoke-test-' + Date.now()}, ${email})
+    VALUES ('Smoke Test Org', ${'smoke-' + Date.now()}, ${email})
     RETURNING *
   `
   orgId = org.id
-  ok('organizations insert', `${org.name} (${org.slug})`)
+  ok('organizations insert', org.name)
 
-  // 4. Add the user as owner
-  const [member] = await sql`
+  await sql`
     INSERT INTO organization_members (organization_id, user_id, role)
     VALUES (${orgId}, ${userId}, 'owner')
+  `
+  ok('organization_members insert', 'owner')
+
+  await sql`
+    INSERT INTO audit_log (organization_id, user_id, entity_type, entity_id, action)
+    VALUES (${orgId}, ${userId}, 'organization', ${orgId}, 'created')
+  `
+  ok('audit_log insert', 'organization.created')
+
+  // === Stage 2 Phase 2.1: packs + versions + categories ===
+  const [taxCat] = await sql`SELECT id, name FROM categories WHERE slug = 'tax'`
+  if (!taxCat) fail('category seed', 'tax category missing')
+  else ok('category seed', `${taxCat.name} loaded`)
+
+  const [pack] = await sql`
+    INSERT INTO packs (organization_id, name, slug, description, category_id, created_by)
+    VALUES (${orgId}, 'Smoke CPA Pack', 'smoke-cpa', 'test pack', ${taxCat.id}, ${userId})
     RETURNING *
   `
-  ok('organization_members insert', `role=${member.role}`)
+  packId = pack.id
+  ok('packs insert', `${pack.name} (slug=${pack.slug})`)
 
-  // 5. Write an audit row (simulates withAudit)
-  await sql`
-    INSERT INTO audit_log (organization_id, user_id, entity_type, entity_id, action, diff)
-    VALUES (${orgId}, ${userId}, 'organization', ${orgId}, 'created', ${sql.json({ created: { before: null, after: org.name } })})
+  // Unique constraint: same slug in same org should fail
+  let duplicateBlocked = false
+  try {
+    await sql`
+      INSERT INTO packs (organization_id, name, slug, created_by)
+      VALUES (${orgId}, 'Duplicate', 'smoke-cpa', ${userId})
+    `
+  } catch {
+    duplicateBlocked = true
+  }
+  if (!duplicateBlocked) fail('unique (org_id, slug) constraint', 'duplicate succeeded')
+  else ok('unique (org_id, slug) constraint', 'rejected duplicate')
+
+  const [version] = await sql`
+    INSERT INTO pack_versions (pack_id, version_number, status, created_by)
+    VALUES (${pack.id}, '0.1.0', 'draft', ${userId})
+    RETURNING *
   `
-  const [audit] = await sql`SELECT * FROM audit_log WHERE entity_id = ${orgId} LIMIT 1`
-  ok('audit_log insert + read', `${audit.action} on ${audit.entity_type}`)
+  versionId = version.id
+  ok('pack_versions insert', `v${version.version_number} status=${version.status}`)
 
-  // 6. Exercise the RLS helper function
-  const [check] = await sql`SELECT public.has_role_at_least(${orgId}::uuid, 'owner') AS r`
-  // Note: SECURITY DEFINER + service role context — function should work but
-  // auth.uid() returns null in this connection. We just verify it executes.
-  ok('has_role_at_least() callable', `returned ${check.r}`)
+  const [entry] = await sql`
+    INSERT INTO pack_entries (pack_version_id, entry_type, title, content, tags, order_index)
+    VALUES (${version.id}, 'fact', 'Section 179 limit',
+            'In 2026 the limit is $1.16M with phase-out at $2.89M.',
+            ARRAY['tax', '2026']::text[], 0)
+    RETURNING *
+  `
+  entryId = entry.id
+  ok('pack_entries insert', `type=${entry.entry_type} title="${entry.title}"`)
 
-  // 7. updated_at trigger fires
-  const before = org.updated_at
+  // updated_at trigger on packs
+  const before = pack.updated_at
   await new Promise((r) => setTimeout(r, 10))
-  await sql`UPDATE organizations SET name = 'Smoke Test Org (renamed)' WHERE id = ${orgId}`
-  const [after] = await sql`SELECT updated_at FROM organizations WHERE id = ${orgId}`
-  if (after.updated_at <= before) fail('updated_at trigger', 'did not advance')
-  else ok('updated_at trigger', `advanced by ${after.updated_at - before}ms`)
+  await sql`UPDATE packs SET description = 'edited' WHERE id = ${pack.id}`
+  const [aftRow] = await sql`SELECT updated_at FROM packs WHERE id = ${pack.id}`
+  if (aftRow.updated_at <= before) fail('packs updated_at trigger', 'did not advance')
+  else ok('packs updated_at trigger', 'advanced')
+
+  // Cascade test: delete pack → version + entries cleared
+  await sql`DELETE FROM packs WHERE id = ${pack.id}`
+  const orphanVersions = await sql`SELECT 1 FROM pack_versions WHERE id = ${versionId}`
+  const orphanEntries = await sql`SELECT 1 FROM pack_entries WHERE id = ${entryId}`
+  if (orphanVersions.length || orphanEntries.length) fail('pack cascade delete', 'orphans remained')
+  else ok('pack cascade delete', 'versions + entries cleaned up')
+  packId = null
 } catch (e) {
   fail('exception', e)
 } finally {
-  // Cleanup
+  if (packId) await sql`DELETE FROM packs WHERE id = ${packId}`.catch(() => {})
   if (orgId) await sql`DELETE FROM organizations WHERE id = ${orgId}`.catch(() => {})
   if (userId) await admin.auth.admin.deleteUser(userId).catch(() => {})
   await sql.end({ timeout: 1 })

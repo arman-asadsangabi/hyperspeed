@@ -15,6 +15,20 @@
       "when": 1778542634201,
       "tag": "0001_auth_and_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1778548719221,
+      "tag": "0002_wise_mole_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1778548729917,
+      "tag": "0003_pack_rls_and_seeds",
+      "breakpoints": true
     }
   ]
 }
