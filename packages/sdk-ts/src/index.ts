@@ -103,7 +103,7 @@ export class Hyperspeed {
     }
     const data = await this.request<{
       query_id: string
-      results: Array<{
+      results: {
         entry_id: string
         entry_type: QueryResult['results'][number]['entryType']
         title: string
@@ -113,7 +113,7 @@ export class Hyperspeed {
         pack_version_id: string
         tags: string[]
         structured_data?: Record<string, unknown> | null
-      }>
+      }[]
       metadata?: {
         packs_queried: string[]
         retrieval_method: 'semantic' | 'keyword'
