@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { hasRoleAtLeast, requireOrgContext } from '@/lib/auth/session'
 import { getPack } from '@/lib/packs/actions'
 import { ArchiveButton } from './archive-button'
+import { NewDraftButton } from './new-draft-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,10 +69,15 @@ export default async function PackDetailPage({ params }: PageProps) {
           <h2 className="text-sm font-medium uppercase tracking-wider text-[var(--color-slate-soft)]">
             Versions
           </h2>
-          <span className="text-xs text-[var(--color-slate-soft)]">
-            {versions.length} total
-            {latestPublished ? ` · latest published: ${latestPublished.versionNumber}` : ''}
-          </span>
+          <div className="flex items-center gap-3 text-xs text-[var(--color-slate-soft)]">
+            <span>
+              {versions.length} total
+              {latestPublished ? ` · latest published: ${latestPublished.versionNumber}` : ''}
+            </span>
+            {canEdit && !pack.isArchived && !latestDraft ? (
+              <NewDraftButton packId={pack.id} />
+            ) : null}
+          </div>
         </div>
         <div className="overflow-hidden rounded-lg border border-[var(--color-border-base)] bg-white">
           <table className="w-full text-sm">
@@ -93,8 +99,18 @@ export default async function PackDetailPage({ params }: PageProps) {
             </thead>
             <tbody>
               {versions.map((v) => (
-                <tr key={v.id} className="border-t border-[var(--color-border-base)]">
-                  <td className="px-4 py-2 font-mono text-[var(--color-ink)]">{v.versionNumber}</td>
+                <tr
+                  key={v.id}
+                  className="border-t border-[var(--color-border-base)] hover:bg-[var(--color-primary-pale)]"
+                >
+                  <td className="px-4 py-2">
+                    <Link
+                      href={`/dashboard/packs/${pack.id}/versions/${v.id}`}
+                      className="font-mono text-[var(--color-primary)] hover:text-[var(--color-primary-deep)]"
+                    >
+                      {v.versionNumber}
+                    </Link>
+                  </td>
                   <td className="px-4 py-2 text-[var(--color-ink)]">{v.status}</td>
                   <td className="px-4 py-2 text-[var(--color-slate-soft)]">
                     {new Date(v.createdAt).toLocaleDateString()}
