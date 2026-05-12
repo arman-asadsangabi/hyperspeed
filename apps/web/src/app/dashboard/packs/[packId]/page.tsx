@@ -43,7 +43,15 @@ export default async function PackDetailPage({ params }: PageProps) {
             </h1>
             <p className="mt-1 font-mono text-xs text-[var(--color-slate-soft)]">/{pack.slug}</p>
           </div>
-          {canEdit && !pack.isArchived ? <ArchiveButton packId={pack.id} /> : null}
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/packs/${pack.id}/documents`}
+              className="rounded-md border border-[var(--color-border-base)] bg-white px-3 py-1.5 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-pale)]"
+            >
+              Documents
+            </Link>
+            {canEdit && !pack.isArchived ? <ArchiveButton packId={pack.id} /> : null}
+          </div>
         </div>
       </div>
 
