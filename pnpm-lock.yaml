@@ -101,6 +101,9 @@ importers:
       '@hyperspeed/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@hyperspeed/eval':
+        specifier: workspace:*
+        version: link:../../packages/eval
       '@hyperspeed/shared':
         specifier: workspace:*
         version: link:../../packages/shared

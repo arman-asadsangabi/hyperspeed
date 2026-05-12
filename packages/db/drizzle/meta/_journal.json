@@ -64,6 +64,20 @@
       "when": 1778549597619,
       "tag": "0008_source_docs_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778549955144,
+      "tag": "0009_lively_clea",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778549955700,
+      "tag": "0010_proposals_lint_rls",
+      "breakpoints": true
     }
   ]
 }
