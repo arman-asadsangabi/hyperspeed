@@ -30,13 +30,19 @@ The build runs in 10 stages over multiple sessions:
 9. **MCP server** — pack resources/tools exposed via MCP
 10. **Production readiness** — SOC 2, HIPAA, observability, load testing
 
-Current state: **Stage 1 complete, schema applied** (Phases 1.1–1.4: monorepo,
-schema, RLS, auth, multi-tenancy, audit logging). Migrations `0000` and `0001`
-applied to Supabase project `lqtmtzofrpbqenxxzqio` (region `us-east-2`).
-Smoke test (`packages/db/scripts/smoke-test.mjs`) verified end-to-end:
-auth user → trigger → public.users → org → member → audit_log → updated_at
-trigger. Vercel env vars all set for both projects. Git push blocked on PAT
-scope (Contents: Write not granted).
+Current state: **Stage 1 complete, code on GitHub** (Phases 1.1–1.4: monorepo,
+schema, RLS, auth, multi-tenancy, audit logging).
+
+- Migrations `0000` and `0001` applied to Supabase project
+  `lqtmtzofrpbqenxxzqio` (region `us-east-2`, `aws-1-*` pooler).
+- Smoke test (`packages/db/scripts/smoke-test.mjs`) — 7/7 checks pass.
+- All 5 env vars set on both Vercel projects (prod + dev): URL, anon key,
+  service role key, DATABASE_URL, DIRECT_DATABASE_URL.
+- 3 commits live on
+  [github.com/arman-asadsangabi/hyperspeed](https://github.com/arman-asadsangabi/hyperspeed).
+- Vercel auto-deploy blocked on two user-only clicks: connect GitHub at the
+  Vercel account level, and set Root Directory on each project. See "What's
+  blocked on the user" below.
 
 ## Architecture (high level)
 
@@ -202,14 +208,17 @@ attempted-state captured). Don't bypass it.
 
 ## What's blocked on the user
 
-- **GitHub PAT scope** — the current fine-grained PAT can read but lacks
-  `Contents: Read and write` on the `hyperspeed` repo, so `git push` returns 403. User needs to update the PAT scope (or replace with a classic PAT with
-  `repo` scope). Until then, deploys go via `vercel deploy --prod` from the
-  CLI, not via git → Vercel webhook.
-- Anthropic + OpenAI + Resend API keys (Phases 2.4 / 3.2 / 4 / 5)
+- **Vercel "Login Connection" to GitHub** — Vercel needs the user to authorize
+  its GitHub App via the dashboard at
+  [vercel.com/account/login-connections](https://vercel.com/account/login-connections).
+  An API token can't do this. Once connected, `vercel git connect` links the
+  repo and future pushes auto-deploy.
+- **Root Directory on each Vercel project** — set `apps/web` on hyperspeed-web
+  and `apps/api` on hyperspeed-api at Settings → Build & Deployment. Without
+  this, the build doesn't see the parent `pnpm-workspace.yaml`.
+- Anthropic + OpenAI + Resend API keys (Phases 2.4 / 3.2 / 4 / 5).
 - Supabase Management API token (`sbp_*`) — would let me automate password
-  resets, project metadata fetches, and direct SQL runs for future stages.
-  Not strictly required now since we have what we need.
+  resets and project metadata fetches in future stages. Not strictly required.
 
 ## Decision log
 
