@@ -94,6 +94,12 @@ export default async function VersionDetailPage({ params }: PageProps) {
             >
               Test chat
             </Link>
+            <Link
+              href={`/dashboard/packs/${packId}/versions/${versionId}/evals`}
+              className="rounded-md border border-[var(--color-border-base)] bg-white px-3 py-1.5 text-sm text-[var(--color-ink)] transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary-pale)]"
+            >
+              Evals
+            </Link>
             {canEdit ? (
               <VersionLifecycleControls
                 versionId={versionId}
