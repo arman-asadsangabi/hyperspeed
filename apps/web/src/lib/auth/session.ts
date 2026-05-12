@@ -96,7 +96,15 @@ export async function getOrgContext(): Promise<OrgContext | null> {
   if (!membership) return null
 
   if (membership.organization.id !== activeOrgId) {
-    await setActiveOrgCookie(membership.organization.id)
+    // Best-effort: cookies().set() throws when called from a Server Component.
+    // Only Server Actions, Route Handlers, and middleware can mutate cookies.
+    // The membership is still used in-memory; the cookie persists on the next
+    // mutation (e.g. org switch, sign-in action).
+    try {
+      await setActiveOrgCookie(membership.organization.id)
+    } catch {
+      // read-only cookie store; ignore.
+    }
   }
 
   const [userRow] = await db().select().from(users).where(eq(users.id, sessionUser.id))

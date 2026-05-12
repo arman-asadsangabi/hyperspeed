@@ -15,7 +15,13 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
 
   if (memberships.length > 0) {
     const first = memberships[0]
-    if (first) await setActiveOrgCookie(first.organization.id)
+    if (first) {
+      try {
+        await setActiveOrgCookie(first.organization.id)
+      } catch {
+        // Server Component cookie store is read-only; redirect anyway.
+      }
+    }
     redirect('/dashboard')
   }
 
