@@ -17,7 +17,9 @@
     "@hono/node-server": "^1.13.7",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
+    "drizzle-orm": "^0.38.3",
     "hono": "^4.6.16",
+    "postgres": "^3.4.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

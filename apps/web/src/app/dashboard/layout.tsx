@@ -9,6 +9,7 @@ const NAV = [
   { href: '/dashboard', label: 'Overview' },
   { href: '/dashboard/packs', label: 'Packs' },
   { href: '/dashboard/creator', label: 'Creator' },
+  { href: '/dashboard/api', label: 'API' },
   { href: '/dashboard/members', label: 'Members' },
   { href: '/dashboard/admin/audit', label: 'Audit log', minRole: 'admin' as const },
   { href: '/dashboard/settings', label: 'Settings' },
