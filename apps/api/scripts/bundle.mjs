@@ -12,7 +12,12 @@ await build({
   platform: 'node',
   target: 'node22',
   format: 'esm',
-  outfile: resolve(root, 'api/index.js'),
+  // Vercel's "Other" framework auto-discovers an entrypoint by searching for
+  // app.{js,ts}, index.{js,ts}, server.{js,ts}, src/app.{js,ts}, ... in that
+  // order. We output to index.js at the project root so it wins the search,
+  // then nuke src/ to prevent the framework from grabbing src/handler.ts
+  // first and breaking at runtime on bare-specifier imports.
+  outfile: resolve(root, 'index.js'),
   conditions: ['node', 'import'],
   external: [],
   banner: {
@@ -26,11 +31,8 @@ const __dirname = __dn(__filename);`,
   logLevel: 'info',
 })
 
-// Vercel auto-discovers src/handler.ts as a phantom function entry alongside
-// our bundled api/index.js, which then breaks at runtime because src/*.ts
-// imports use bare specifiers (no .js extension). The bundle is fully
-// self-contained, so we wipe src/ post-build to prevent the auto-discovery.
 if (process.env.VERCEL) {
   await rm(resolve(root, 'src'), { recursive: true, force: true })
-  console.log('[bundle] cleaned src/ from deployment artifact')
+  await rm(resolve(root, 'api'), { recursive: true, force: true })
+  console.log('[bundle] cleaned src/ and api/ from deployment artifact')
 }
