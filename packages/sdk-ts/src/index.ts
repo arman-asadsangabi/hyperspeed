@@ -74,7 +74,7 @@ export class HyperspeedError extends Error {
   }
 }
 
-const DEFAULT_BASE = 'https://hyperspeed-api.vercel.app'
+const DEFAULT_BASE = 'https://api.hyperspeed.work'
 
 export class Hyperspeed {
   private readonly baseUrl: string
