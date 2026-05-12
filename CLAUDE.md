@@ -30,9 +30,13 @@ The build runs in 10 stages over multiple sessions:
 9. **MCP server** — pack resources/tools exposed via MCP
 10. **Production readiness** — SOC 2, HIPAA, observability, load testing
 
-Current state: **Stage 1 code-complete locally** (Phases 1.1–1.4: monorepo,
-schema, RLS, auth, multi-tenancy, audit logging). Migration run + Vercel deploy
-blocked on user supplying Supabase DB password + secret key.
+Current state: **Stage 1 complete, schema applied** (Phases 1.1–1.4: monorepo,
+schema, RLS, auth, multi-tenancy, audit logging). Migrations `0000` and `0001`
+applied to Supabase project `lqtmtzofrpbqenxxzqio` (region `us-east-2`).
+Smoke test (`packages/db/scripts/smoke-test.mjs`) verified end-to-end:
+auth user → trigger → public.users → org → member → audit_log → updated_at
+trigger. Vercel env vars all set for both projects. Git push blocked on PAT
+scope (Contents: Write not granted).
 
 ## Architecture (high level)
 
@@ -183,21 +187,29 @@ attempted-state captured). Don't bypass it.
 - **The user's `~/hyperspeed-landing`** is a separate older project; the
   preview tool defaulted to it because of `~/.claude/launch.json`. We added new
   entries with `hyperspeed-monorepo-*` names to avoid collisions.
-- **Drizzle + Supabase pooler**: use port 6543 (pooler, `prepare: false`) for
-  application queries; use port 5432 (direct) only for `drizzle-kit` migrations.
+- **Drizzle + Supabase pooler**: use port 6543 (transaction-mode pooler,
+  `prepare: false`) for application queries via `DATABASE_URL`; use port 5432
+  (session-mode pooler) for `drizzle-kit` migrations via `DIRECT_DATABASE_URL`.
+  Both go through the same hostname.
+- **Supabase project pooler hostname**: `aws-1-us-east-2.pooler.supabase.com`
+  (new projects use `aws-1-*`, not the older `aws-0-*` pattern). User name is
+  `postgres.<project-ref>`. Password URL-encoded — `!` becomes `%21`.
+- **Direct Postgres connection** (`db.<ref>.supabase.co`) is **IPv6-only** for
+  free-tier projects now. If you need IPv4 access, use the pooler hostnames.
+- **`drizzle-kit generate`** uses a placeholder URL when env is unset — see
+  `packages/db/drizzle.config.ts`. This lets us generate migrations without DB
+  credentials (only `migrate`/`push`/`studio` need a real connection).
 
 ## What's blocked on the user
 
-- **Supabase DB password** to fill `DATABASE_URL` / `DIRECT_DATABASE_URL` (the
-  user pasted the template with `[YOUR-PASSWORD]` placeholder).
-- **Supabase service / secret key** (`sb_secret_*`) — only the publishable key
-  was provided so far. Required for server-side ops that bypass RLS.
-- **Pooler connection string** — the direct (5432) was provided; need the
-  pooler (6543) string for app queries.
-- **GitHub remote URL** to push `main` (Vercel projects are linked but won't
-  build until the repo is pushed and webhooks fire).
-- **Vercel env vars** to be set via `vercel env add` once we have the secrets.
+- **GitHub PAT scope** — the current fine-grained PAT can read but lacks
+  `Contents: Read and write` on the `hyperspeed` repo, so `git push` returns 403. User needs to update the PAT scope (or replace with a classic PAT with
+  `repo` scope). Until then, deploys go via `vercel deploy --prod` from the
+  CLI, not via git → Vercel webhook.
 - Anthropic + OpenAI + Resend API keys (Phases 2.4 / 3.2 / 4 / 5)
+- Supabase Management API token (`sbp_*`) — would let me automate password
+  resets, project metadata fetches, and direct SQL runs for future stages.
+  Not strictly required now since we have what we need.
 
 ## Decision log
 
@@ -223,3 +235,7 @@ attempted-state captured). Don't bypass it.
 - **2026-05-11** — Active org cookie: `hyperspeed_org_id` (httpOnly, lax,
   one-year maxAge). Stored separately from the Supabase session cookies so
   it survives sign-out/sign-in cycles within the same browser.
+- **2026-05-11** — Supabase project provisioned in `us-east-2` (Ohio); region
+  derived by probing `aws-1-<region>.pooler.supabase.com` poolers in parallel
+  with the project credentials. See `packages/db/scripts/probe-region.mjs` —
+  reusable for future Supabase projects when the dashboard region isn't handy.

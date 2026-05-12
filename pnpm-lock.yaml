@@ -168,6 +168,9 @@ importers:
       '@hyperspeed/shared':
         specifier: workspace:*
         version: link:../shared
+      '@supabase/supabase-js':
+        specifier: ^2.105.4
+        version: 2.105.4
       drizzle-orm:
         specifier: ^0.38.3
         version: 0.38.4(@types/react@19.2.14)(postgres@3.4.9)(react@19.2.6)
