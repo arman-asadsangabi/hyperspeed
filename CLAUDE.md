@@ -30,28 +30,42 @@ The build runs in 10 stages over multiple sessions:
 9. **MCP server** — pack resources/tools exposed via MCP
 10. **Production readiness** — SOC 2, HIPAA, observability, load testing
 
-Current state: **Stage 1 complete, code on GitHub** (Phases 1.1–1.4: monorepo,
-schema, RLS, auth, multi-tenancy, audit logging).
+Current state: **All 10 stages code-complete and on GitHub.**
 
-- Migrations `0000` and `0001` applied to Supabase project
-  `lqtmtzofrpbqenxxzqio` (region `us-east-2`, `aws-1-*` pooler).
-- Smoke test (`packages/db/scripts/smoke-test.mjs`) — 7/7 checks pass.
-- All 5 env vars set on both Vercel projects (prod + dev): URL, anon key,
-  service role key, DATABASE_URL, DIRECT_DATABASE_URL.
-- 3 commits live on
+- 17 migrations applied to Supabase project `lqtmtzofrpbqenxxzqio` (region
+  `us-east-2`, `aws-1-*` pooler) — 30+ tables, RLS on every one, pgvector +
+  trigger + helper-function ladder all live.
+- 7 workspace packages typecheck clean: `apps/web` (Next.js), `apps/api`
+  (Hono on Vercel Node runtime), `packages/db`, `packages/shared`,
+  `packages/eval` (Anthropic + OpenAI wrappers), `packages/sdk-ts` (publishable
+  TypeScript SDK), `packages/mcp` (publishable MCP server).
+- 3 cron jobs configured in `apps/web/vercel.json`: embedding backfill (15m),
+  eval drift detection (weekly), creator payouts (monthly).
+- All commits live on
   [github.com/arman-asadsangabi/hyperspeed](https://github.com/arman-asadsangabi/hyperspeed).
-- Vercel auto-deploy blocked on two user-only clicks: connect GitHub at the
-  Vercel account level, and set Root Directory on each project. See "What's
-  blocked on the user" below.
+
+**Stage gates that still need turning on (env vars only — no code changes):**
+
+- `ANTHROPIC_API_KEY` → unlocks ingestion, lint AI checks, test chat, eval runs
+- `OPENAI_API_KEY` → unlocks embedding pipeline + semantic search
+  (keyword fallback works without it)
+- `STRIPE_SECRET_KEY` → unlocks Connect transfers in the creator-payouts cron
+  (payout rows still created without it)
+- `SENTRY_DSN` → unlocks observability captureException (currently console-logs)
+- `RESEND_API_KEY` → unlocks transactional emails (invites, design partner ack)
+- `CRON_SECRET` → required for the Vercel cron routes to authenticate
 
 ## Architecture (high level)
 
 ```
-apps/web      Next.js 15 marketing site, creator portal, enterprise console
-apps/api      Hono API (deployed to Vercel) — runtime query endpoint lives here
-packages/db   Drizzle ORM schema, client, migrations
+apps/web         Next.js 15 marketing site, creator portal, enterprise console,
+                 cron jobs (embed backfill / eval drift / creator payouts)
+apps/api         Hono on Vercel Node runtime — public /v1/query + /v1/me + /health
+packages/db      Drizzle ORM schema (30+ tables), migrations, smoke + setup scripts
 packages/shared  Types, Zod schemas, brand constants, shared utils
-packages/eval Eval pipeline + Anthropic/OpenAI client wrappers (Stage 4)
+packages/eval    Claude judge + ingestion + lint + test-chat + runner (Stages 3+4)
+packages/sdk-ts  Publishable @hyperspeed/sdk — TS client for the runtime API
+packages/mcp     Publishable @hyperspeed/mcp — MCP server wrapping the SDK
 ```
 
 apps/web and apps/api consume packages as TypeScript source (no build step

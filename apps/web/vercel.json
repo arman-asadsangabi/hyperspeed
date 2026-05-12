@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/embed-backfill",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/eval-drift",
+      "schedule": "0 2 * * 0"
+    },
+    {
+      "path": "/api/cron/creator-payouts",
+      "schedule": "0 6 1 * *"
+    }
+  ]
+}

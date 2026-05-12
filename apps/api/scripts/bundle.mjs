@@ -8,11 +8,19 @@ const root = resolve(here, '..')
 await build({
   entryPoints: [resolve(root, 'src/handler.ts')],
   bundle: true,
-  platform: 'browser',
-  target: 'es2022',
+  platform: 'node',
+  target: 'node22',
   format: 'esm',
   outfile: resolve(root, 'api/index.js'),
-  conditions: ['workerd', 'edge', 'browser', 'import'],
+  conditions: ['node', 'import'],
   external: [],
+  banner: {
+    js: `import { createRequire as __cr } from 'module';
+import { fileURLToPath as __fu } from 'url';
+import { dirname as __dn } from 'path';
+const require = __cr(import.meta.url);
+const __filename = __fu(import.meta.url);
+const __dirname = __dn(__filename);`,
+  },
   logLevel: 'info',
 })
