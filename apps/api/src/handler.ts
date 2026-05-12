@@ -1,9 +1,9 @@
 import { app } from './app'
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
 }
 
-export default function handler(request: Request): Response | Promise<Response> {
+export default async function handler(request: Request): Promise<Response> {
   return app.fetch(request)
 }

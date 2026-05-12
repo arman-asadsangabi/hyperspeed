@@ -1,6 +1,7 @@
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { rm } from 'node:fs/promises'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '..')
@@ -24,3 +25,12 @@ const __dirname = __dn(__filename);`,
   },
   logLevel: 'info',
 })
+
+// Vercel auto-discovers src/handler.ts as a phantom function entry alongside
+// our bundled api/index.js, which then breaks at runtime because src/*.ts
+// imports use bare specifiers (no .js extension). The bundle is fully
+// self-contained, so we wipe src/ post-build to prevent the auto-discovery.
+if (process.env.VERCEL) {
+  await rm(resolve(root, 'src'), { recursive: true, force: true })
+  console.log('[bundle] cleaned src/ from deployment artifact')
+}
