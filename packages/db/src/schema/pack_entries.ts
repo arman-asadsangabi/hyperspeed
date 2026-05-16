@@ -8,6 +8,7 @@ import {
   jsonb,
   index,
   uniqueIndex,
+  vector,
 } from 'drizzle-orm/pg-core'
 import { entryTypeEnum } from './enums'
 import { packVersions } from './pack_versions'
@@ -28,6 +29,9 @@ export const packEntries = pgTable(
       .default(sql`'{}'::text[]`)
       .notNull(),
     orderIndex: integer('order_index').default(0).notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }),
+    embeddingModel: text('embedding_model'),
+    embeddingComputedAt: timestamp('embedding_computed_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true })
       .default(sql`now()`)
       .notNull(),

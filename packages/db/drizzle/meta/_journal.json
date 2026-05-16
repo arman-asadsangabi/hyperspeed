@@ -120,6 +120,13 @@
       "when": 1778551765701,
       "tag": "0016_stages_6_7_8_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778922759807,
+      "tag": "0017_pack_entries_embedding",
+      "breakpoints": true
     }
   ]
 }
