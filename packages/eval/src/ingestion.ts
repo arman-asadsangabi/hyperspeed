@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { ENTRY_TYPES } from '@hyperspeed/shared/constants'
-import { ANTHROPIC_MODEL, getAnthropic, parseJsonFromResponse } from './anthropic'
+import { ANTHROPIC_MODEL, getAnthropic } from './anthropic'
 
 const proposedEntrySchema = z.object({
   entryType: z.enum(ENTRY_TYPES),
@@ -34,20 +34,7 @@ export async function extractPackEntries(params: ExtractParams): Promise<Propose
           .join('\n')
       : '(none)'
 
-  const systemPrompt = `You extract structured knowledge from professional documents in the ${params.domain} domain.
-
-Output strict JSON only — no prose, no preamble, no code fences. The output must be a JSON array of objects.
-
-Each object must match this schema:
-{
-  "entryType": "fact" | "heuristic" | "decision_rule" | "example" | "citation" | "meta_rule",
-  "title": "concise title (max 120 chars)",
-  "content": "markdown body — concrete, specific, actionable",
-  "structuredData": null | object  // optional structured fields per type
-  "confidence": "low" | "medium" | "high",
-  "sourceExcerpt": "the verbatim passage this came from (max 500 chars)",
-  "suggestedTags": ["tag1", "tag2"]
-}
+  const systemPrompt = `You extract structured knowledge from professional documents in the ${params.domain} domain. Call the record_entries tool exactly once with all extracted entries.
 
 Entry-type guide:
 - fact: a specific true statement (numbers, dates, definitions)
@@ -62,7 +49,7 @@ Quality rules:
 - Be specific: prefer "$1.16M for 2026" over "the deduction limit". Quote numbers and dates exactly.
 - Skip prose-only paragraphs that don't translate into a fact/rule/example.
 - Aim for ${max} entries or fewer. Quality > quantity.
-- Output [] if the document has no extractable expert knowledge.`
+- Pass entries: [] if the document has no extractable expert knowledge.`
 
   const userPrompt = `Document: ${params.documentName}
 
@@ -72,6 +59,7 @@ ${existingSummary}
 Document content:
 ${params.documentText.slice(0, 200_000)}`
 
+  // Use tool_choice to force structured output — eliminates JSON parse errors.
   const message = await client.messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: 8000,
@@ -82,12 +70,70 @@ ${params.documentText.slice(0, 200_000)}`
         cache_control: { type: 'ephemeral' },
       },
     ],
+    tools: [
+      {
+        name: 'record_entries',
+        description: 'Record the extracted pack entries from the document.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            entries: {
+              type: 'array',
+              description: 'List of extracted knowledge entries.',
+              items: {
+                type: 'object',
+                properties: {
+                  entryType: {
+                    type: 'string',
+                    enum: [...ENTRY_TYPES],
+                    description: 'Type of entry.',
+                  },
+                  title: {
+                    type: 'string',
+                    description: 'Concise title, max 120 chars.',
+                  },
+                  content: {
+                    type: 'string',
+                    description: 'Markdown body — concrete, specific, actionable.',
+                  },
+                  structuredData: {
+                    type: ['object', 'null'],
+                    description: 'Optional structured fields per type.',
+                  },
+                  confidence: {
+                    type: 'string',
+                    enum: ['low', 'medium', 'high'],
+                    description: 'Confidence level for this entry.',
+                  },
+                  sourceExcerpt: {
+                    type: 'string',
+                    description: 'Verbatim passage this came from (max 500 chars).',
+                  },
+                  suggestedTags: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Tags suggested for this entry.',
+                  },
+                },
+                required: ['entryType', 'title', 'content', 'confidence', 'suggestedTags'],
+              },
+            },
+          },
+          required: ['entries'],
+        },
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'record_entries' },
     messages: [{ role: 'user', content: userPrompt }],
   })
 
-  const text = message.content.map((block) => ('text' in block ? block.text : '')).join('')
-  const raw = parseJsonFromResponse<unknown>(text)
-  if (!Array.isArray(raw)) throw new Error('Expected a JSON array of entries')
+  // The model is forced to call record_entries — the tool_use block contains validated JSON.
+  const toolUse = message.content.find((b) => b.type === 'tool_use')
+  if (!toolUse || toolUse.type !== 'tool_use') {
+    throw new Error('Model did not call record_entries')
+  }
+  const input = toolUse.input as { entries?: unknown }
+  const raw = Array.isArray(input.entries) ? input.entries : []
 
   const parsed: ProposedEntryDraft[] = []
   for (const item of raw) {
