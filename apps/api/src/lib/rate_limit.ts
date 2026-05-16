@@ -30,15 +30,18 @@ export interface RateLimitInfo {
 export async function checkRateLimit(orgId: string, tier: string): Promise<RateLimitInfo> {
   const limits = LIMITS[tier] ?? LIMITS.free!
   const now = new Date()
-  const minuteAgo = new Date(now.getTime() - 60_000)
-  const dayAgo = new Date(now.getTime() - 86_400_000)
+  // postgres-js inside Drizzle's raw `sql` template can't infer column type
+  // for a bare Date and fails in Buffer.byteLength; serialize to ISO strings
+  // and cast on the Postgres side.
+  const minuteAgoIso = new Date(now.getTime() - 60_000).toISOString()
+  const dayAgoIso = new Date(now.getTime() - 86_400_000).toISOString()
 
   const rows = await db().execute(sql`
     SELECT
-      COUNT(*) FILTER (WHERE created_at >= ${minuteAgo})::int AS minute_count,
-      COUNT(*) FILTER (WHERE created_at >= ${dayAgo})::int AS day_count
+      COUNT(*) FILTER (WHERE created_at >= ${minuteAgoIso}::timestamptz)::int AS minute_count,
+      COUNT(*) FILTER (WHERE created_at >= ${dayAgoIso}::timestamptz)::int AS day_count
     FROM ${apiUsageEvents}
-    WHERE organization_id = ${orgId} AND created_at >= ${dayAgo}
+    WHERE organization_id = ${orgId} AND created_at >= ${dayAgoIso}::timestamptz
   `)
   const row = (rows as unknown as { minute_count: number; day_count: number }[])[0] ?? {
     minute_count: 0,
