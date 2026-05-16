@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { chatAgainstVersion } from '@/lib/packs/test_chat'
+import { MarkdownView } from '@/components/markdown-view'
 
 interface Entry {
   id: string
@@ -59,9 +60,15 @@ export function TestChat({ versionId, entries }: { versionId: string; entries: E
               <div className="text-xs font-medium uppercase tracking-wider text-[var(--color-slate-soft)]">
                 {t.role === 'user' ? 'You' : 'Pack-grounded Claude'}
               </div>
-              <div className="mt-1 whitespace-pre-wrap text-sm text-[var(--color-ink)]">
-                {t.content}
-              </div>
+              {t.role === 'assistant' ? (
+                <MarkdownView className="mt-1 text-sm text-[var(--color-ink)]">
+                  {t.content}
+                </MarkdownView>
+              ) : (
+                <div className="mt-1 whitespace-pre-wrap text-sm text-[var(--color-ink)]">
+                  {t.content}
+                </div>
+              )}
               {t.cited && t.cited.length > 0 ? (
                 <div className="mt-2 text-xs text-[var(--color-slate-soft)]">
                   Cited:{' '}
