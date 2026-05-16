@@ -88,22 +88,32 @@ queryRouter.post('/query', async (c) => {
   // Vector search if embeddings exist; falls back to LIKE on title+content.
   const queryEmbedding = await embedQuery(parsed.data.query).catch(() => null)
 
-  let entries: (PackEntry & { relevance: number; packId: string })[]
+  let entries: (PackEntry & { relevance: number; packId: string })[] = []
+  let retrievalMethod: 'semantic' | 'keyword' = 'keyword'
   if (queryEmbedding && versionIds.length > 0) {
     const vec = `[${queryEmbedding.join(',')}]`
-    const rows = await db().execute(sql`
-      SELECT pe.*, pv.pack_id AS pack_id,
-        1 - (pe.embedding <=> ${vec}::vector) AS relevance
-      FROM ${packEntries} pe
-      INNER JOIN ${packVersions} pv ON pv.id = pe.pack_version_id
-      WHERE pv.id = ANY(${sql.raw(`ARRAY[${versionIds.map((v) => `'${v}'::uuid`).join(',')}]`)})
-        AND pe.embedding IS NOT NULL
-      ORDER BY pe.embedding <=> ${vec}::vector ASC
-      LIMIT ${parsed.data.max_results}
-    `)
-    entries = rows as unknown as (PackEntry & { relevance: number; packId: string })[]
-  } else {
-    // Keyword fallback
+    try {
+      const rows = await db().execute(sql`
+        SELECT pe.*, pv.pack_id AS pack_id,
+          1 - (pe.embedding <=> ${vec}::vector) AS relevance
+        FROM ${packEntries} pe
+        INNER JOIN ${packVersions} pv ON pv.id = pe.pack_version_id
+        WHERE pv.id = ANY(${sql.raw(`ARRAY[${versionIds.map((v) => `'${v}'::uuid`).join(',')}]`)})
+          AND pe.embedding IS NOT NULL
+        ORDER BY pe.embedding <=> ${vec}::vector ASC
+        LIMIT ${parsed.data.max_results}
+      `)
+      entries = rows as unknown as (PackEntry & { relevance: number; packId: string })[]
+      retrievalMethod = 'semantic'
+    } catch (err) {
+      // pack_entries.embedding column not yet provisioned — degrade to keyword.
+      // Logged once so we know to run the migration + backfill.
+      console.warn('[query] vector search failed, falling back to keyword:', err)
+    }
+  }
+
+  if (entries.length === 0 && versionIds.length > 0) {
+    // Keyword fallback (also covers vector-search miss and the no-OPENAI_API_KEY case).
     const q = `%${parsed.data.query.toLowerCase()}%`
     const rows = await db()
       .select({ entry: packEntries, packId: packVersions.packId })
@@ -111,7 +121,7 @@ queryRouter.post('/query', async (c) => {
       .innerJoin(packVersions, eq(packEntries.packVersionId, packVersions.id))
       .where(
         and(
-          inArray(packVersions.id, versionIds.length > 0 ? versionIds : ['']),
+          inArray(packVersions.id, versionIds),
           sql`(lower(${packEntries.title}) like ${q} OR lower(${packEntries.content}) like ${q})`,
         ),
       )
@@ -151,7 +161,7 @@ queryRouter.post('/query', async (c) => {
     metadata: parsed.data.include_metadata
       ? {
           packs_queried: packIds,
-          retrieval_method: queryEmbedding ? 'semantic' : 'keyword',
+          retrieval_method: retrievalMethod,
           latency_ms: latencyMs,
         }
       : undefined,
