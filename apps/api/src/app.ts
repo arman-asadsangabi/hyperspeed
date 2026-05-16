@@ -6,6 +6,7 @@ import { HTTPException } from 'hono/http-exception'
 import { corsMiddleware } from './middleware/cors'
 import { healthRouter } from './routes/health'
 import { queryRouter } from './routes/query'
+import { mcpRouter } from './routes/mcp'
 
 export const app = new Hono()
 
@@ -26,6 +27,7 @@ app.get('/', (c) =>
       health: '/health',
       query: 'POST /v1/query',
       me: 'GET /v1/me',
+      mcp: 'POST /mcp',
     },
   }),
 )
@@ -33,6 +35,7 @@ app.get('/', (c) =>
 app.route('/', healthRouter)
 app.route('/v1', queryRouter)
 app.get('/v1', (c) => c.json({ message: 'Hyperspeed API v1' }))
+app.route('/', mcpRouter)
 
 app.notFound((c) => c.json({ error: { code: 'not_found', message: 'Route not found' } }, 404))
 
