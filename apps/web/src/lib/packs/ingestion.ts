@@ -80,8 +80,26 @@ export async function runIngestion(
     .where(eq(packEntries.packVersionId, versionId))
 
   let created = 0
+  let lastError: string | undefined
+  console.log(
+    '[ingestion] start',
+    JSON.stringify({
+      versionId,
+      docCount: docs.length,
+      docs: docs.map((d) => ({
+        id: d.id,
+        status: d.textExtractionStatus,
+        chars: d.extractedText?.length ?? 0,
+      })),
+      domain,
+      existingCount: existing.length,
+    }),
+  )
   for (const doc of docs) {
-    if (!doc.extractedText || doc.textExtractionStatus !== 'completed') continue
+    if (!doc.extractedText || doc.textExtractionStatus !== 'completed') {
+      console.warn('[ingestion] skip doc (not extracted)', doc.id, doc.textExtractionStatus)
+      continue
+    }
     try {
       const drafts = await extractPackEntries({
         domain,
@@ -89,26 +107,38 @@ export async function runIngestion(
         documentName: doc.filename,
         existingEntries: existing,
       })
+      console.log('[ingestion] extracted', { docId: doc.id, drafts: drafts.length })
       for (const d of drafts) {
-        await db()
-          .insert(proposedEntries)
-          .values({
-            packVersionId: versionId,
-            sourceDocumentId: doc.id,
-            entryType: d.entryType,
+        try {
+          await db()
+            .insert(proposedEntries)
+            .values({
+              packVersionId: versionId,
+              sourceDocumentId: doc.id,
+              entryType: d.entryType,
+              title: d.title,
+              content: d.content,
+              structuredData: d.structuredData ?? null,
+              confidence: d.confidence,
+              sourceExcerpt: d.sourceExcerpt,
+              suggestedTags: d.suggestedTags,
+            })
+          created++
+        } catch (insertErr) {
+          lastError = insertErr instanceof Error ? insertErr.message : String(insertErr)
+          console.error('[ingestion] insert failed', {
+            docId: doc.id,
             title: d.title,
-            content: d.content,
-            structuredData: d.structuredData ?? null,
-            confidence: d.confidence,
-            sourceExcerpt: d.sourceExcerpt,
-            suggestedTags: d.suggestedTags,
+            err: lastError,
           })
-        created++
+        }
       }
     } catch (err: unknown) {
-      console.error('ingestion error for doc', doc.id, err)
+      lastError = err instanceof Error ? err.message : String(err)
+      console.error('[ingestion] extract failed', { docId: doc.id, err: lastError })
     }
   }
+  console.log('[ingestion] done', { created, lastError })
 
   await withAudit(
     {
