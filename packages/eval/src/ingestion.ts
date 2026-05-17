@@ -59,10 +59,11 @@ ${existingSummary}
 Document content:
 ${params.documentText.slice(0, 200_000)}`
 
-  // Use tool_choice to force structured output — eliminates JSON parse errors.
-  // Sonnet 4.5 supports up to 64k output tokens; 32k gives plenty of headroom
-  // for 25 detailed entries on a dense document.
-  const message = await client.messages.create({
+  // Streaming is required when max_tokens × estimated generation time exceeds
+  // Anthropic's 10-min precheck threshold. 32k output tokens × dense input
+  // trips it. Streaming avoids the precheck and lets the SDK accumulate the
+  // tool_use input as it arrives.
+  const stream = client.messages.stream({
     model: ANTHROPIC_MODEL,
     max_tokens: 32000,
     system: [
@@ -128,6 +129,7 @@ ${params.documentText.slice(0, 200_000)}`
     tool_choice: { type: 'tool', name: 'record_entries' },
     messages: [{ role: 'user', content: userPrompt }],
   })
+  const message = await stream.finalMessage()
 
   // The model is forced to call record_entries — the tool_use block contains validated JSON.
   const toolUse = message.content.find((b) => b.type === 'tool_use')

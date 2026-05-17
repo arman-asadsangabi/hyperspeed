@@ -11,6 +11,9 @@ import { IngestionRunner } from './runner'
 import { ProposalCard } from './proposal-card'
 
 export const dynamic = 'force-dynamic'
+// Claude streaming extraction on dense docs can run 2–4 minutes; default 60s
+// Vercel function timeout cuts it off mid-stream. Pro plan max is 300s.
+export const maxDuration = 300
 
 interface PageProps {
   params: Promise<{ packId: string; versionId: string }>
