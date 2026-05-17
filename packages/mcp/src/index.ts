@@ -74,7 +74,15 @@ export function createServer(options: ServerOptions): Server {
 
     if (name === 'query_pack') {
       const query = typeof args.query === 'string' ? args.query : ''
-      const packId = typeof args.pack_id === 'string' ? args.pack_id : options.packIds?.[0]
+      // Default to querying every configured pack — lets users add packs to
+      // HYPERSPEED_PACK_IDS without per-call routing. Specific pack still wins
+      // when passed in args.
+      const packId: string | string[] | undefined =
+        typeof args.pack_id === 'string'
+          ? args.pack_id
+          : options.packIds && options.packIds.length > 0
+            ? options.packIds
+            : undefined
       const maxResults = typeof args.max_results === 'number' ? args.max_results : 5
       if (!packId)
         return {
