@@ -81,23 +81,9 @@ export async function runIngestion(
 
   let created = 0
   let lastError: string | undefined
-  console.log(
-    '[ingestion] start',
-    JSON.stringify({
-      versionId,
-      docCount: docs.length,
-      docs: docs.map((d) => ({
-        id: d.id,
-        status: d.textExtractionStatus,
-        chars: d.extractedText?.length ?? 0,
-      })),
-      domain,
-      existingCount: existing.length,
-    }),
-  )
   for (const doc of docs) {
     if (!doc.extractedText || doc.textExtractionStatus !== 'completed') {
-      console.warn('[ingestion] skip doc (not extracted)', doc.id, doc.textExtractionStatus)
+      console.warn('[ingestion] skip (not extracted)', doc.id, doc.textExtractionStatus)
       continue
     }
     try {
@@ -107,7 +93,6 @@ export async function runIngestion(
         documentName: doc.filename,
         existingEntries: existing,
       })
-      console.log('[ingestion] extracted', { docId: doc.id, drafts: drafts.length })
       for (const d of drafts) {
         try {
           await db()
@@ -126,11 +111,7 @@ export async function runIngestion(
           created++
         } catch (insertErr) {
           lastError = insertErr instanceof Error ? insertErr.message : String(insertErr)
-          console.error('[ingestion] insert failed', {
-            docId: doc.id,
-            title: d.title,
-            err: lastError,
-          })
+          console.error('[ingestion] insert failed', { docId: doc.id, err: lastError })
         }
       }
     } catch (err: unknown) {
@@ -138,7 +119,6 @@ export async function runIngestion(
       console.error('[ingestion] extract failed', { docId: doc.id, err: lastError })
     }
   }
-  console.log('[ingestion] done', { created, lastError })
 
   await withAudit(
     {
@@ -156,6 +136,10 @@ export async function runIngestion(
   )
 
   revalidatePath(`/dashboard/packs/${pack.id}/versions/${version.id}/ingest`)
+  // Surface the last error to the caller when nothing was created — otherwise
+  // the UI says "Created 0 proposals" with no clue why (token cap, schema
+  // mismatch, etc.).
+  if (created === 0 && lastError) return { created, error: lastError }
   return { created }
 }
 

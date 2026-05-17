@@ -60,9 +60,11 @@ Document content:
 ${params.documentText.slice(0, 200_000)}`
 
   // Use tool_choice to force structured output — eliminates JSON parse errors.
+  // Sonnet 4.5 supports up to 64k output tokens; 32k gives plenty of headroom
+  // for 25 detailed entries on a dense document.
   const message = await client.messages.create({
     model: ANTHROPIC_MODEL,
-    max_tokens: 8000,
+    max_tokens: 32000,
     system: [
       {
         type: 'text',
@@ -131,6 +133,11 @@ ${params.documentText.slice(0, 200_000)}`
   const toolUse = message.content.find((b) => b.type === 'tool_use')
   if (!toolUse || toolUse.type !== 'tool_use') {
     throw new Error('Model did not call record_entries')
+  }
+  if (message.stop_reason === 'max_tokens') {
+    throw new Error(
+      'Extraction hit the max_tokens cap before the tool call could finish. Document is too dense — split it into smaller files and re-ingest.',
+    )
   }
   const input = toolUse.input as { entries?: unknown }
   const raw = Array.isArray(input.entries) ? input.entries : []
