@@ -11,6 +11,7 @@ import {
 import { db } from '@hyperspeed/db/client'
 import { authenticateApiKey, HttpError } from '../lib/auth'
 import { checkRateLimit } from '../lib/rate_limit'
+import { requireActiveSubscription } from '../lib/billing_gate'
 
 export const queryRouter = new Hono()
 
@@ -31,6 +32,15 @@ queryRouter.post('/query', async (c) => {
   } catch (e) {
     if (e instanceof HttpError)
       return c.json({ error: { code: e.code, message: e.message } }, e.status as 401)
+    throw e
+  }
+
+  // Subscription gate
+  try {
+    await requireActiveSubscription(auth.organization.id)
+  } catch (e) {
+    if (e instanceof HttpError)
+      return c.json({ error: { code: e.code, message: e.message } }, e.status as 402)
     throw e
   }
 

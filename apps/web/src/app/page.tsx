@@ -13,6 +13,9 @@ export default function HomePage() {
             </span>
           </div>
           <nav className="flex items-center gap-6 text-sm text-[var(--color-slate-soft)]">
+            <Link href="/pricing" className="hover:text-[var(--color-ink)]">
+              Pricing
+            </Link>
             <Link href="/docs" className="hover:text-[var(--color-ink)]">
               Docs
             </Link>

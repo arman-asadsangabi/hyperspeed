@@ -17,6 +17,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm'
 import { packs, packVersions, packEntries, type PackEntry } from '@hyperspeed/db/schema'
 import { db } from '@hyperspeed/db/client'
 import { authenticateApiKey, HttpError } from '../lib/auth'
+import { requireActiveSubscription } from '../lib/billing_gate'
 
 export const mcpRouter = new Hono()
 
@@ -139,6 +140,19 @@ mcpRouter.post('/mcp', async (c) => {
       if (e instanceof HttpError) {
         return c.json<JsonRpcError>(
           { jsonrpc: '2.0', id: reqId, error: { code: -32001, message: e.message } },
+          200,
+        )
+      }
+      throw e
+    }
+
+    // Subscription gate
+    try {
+      await requireActiveSubscription(auth.organization.id)
+    } catch (e) {
+      if (e instanceof HttpError) {
+        return c.json<JsonRpcError>(
+          { jsonrpc: '2.0', id: reqId, error: { code: -32002, message: e.message } },
           200,
         )
       }
