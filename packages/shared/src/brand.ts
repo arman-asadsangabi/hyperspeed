@@ -1,8 +1,7 @@
 export const BRAND = {
   name: 'Hyperspeed',
-  tagline: "Your professor's expertise, on tap inside any LLM",
-  description:
-    "Professors package their course knowledge into licensable expertise packs. Students plug them into ChatGPT, Claude, Cursor, or any AI tool and get answers in their actual professor's voice — not generic web results.",
+  tagline: 'Expertise infrastructure for AI',
+  description: 'B2B expertise infrastructure for AI companies',
   domain: 'hyperspeed.work',
 } as const
 

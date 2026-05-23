@@ -7,29 +7,13 @@ Update it as you finish each phase with new decisions, gotchas, and conventions.
 
 ## What this is
 
-Hyperspeed lets professors package their course expertise into licensable knowledge
-packs. Students plug those packs into any LLM (ChatGPT, Claude, Cursor, custom
-agents) via API or MCP and get answers in their actual professor's voice and
-framing — not generic web results.
+Hyperspeed is B2B expertise infrastructure for AI companies. Verified domain experts
+(CPAs, lawyers, doctors, etc.) package their knowledge into structured "memory packs."
+AI companies license those packs via API to inject specialist context into their
+agents at runtime.
 
-Pivoted from "B2B expertise for AI companies" to academia on 2026-05-17. The
-underlying platform is identical (multi-tenant orgs, packs, versions, entries,
-eval-gated publishing, API + MCP runtime). The DB models still call authors
-"creators" and consumers "licensees"; the customer-facing copy uses "professor"
-and "student." Map mentally:
-
-- creator / verified domain expert → **professor**
-- AI company / licensee → **student** (or department / institution)
-- design partner → **faculty partner**
-- credential (CPA/JD/MD) → **academic credential (PhD, faculty appointment)**
-
-Business model (post-pivot, still being shaped):
-
-- Faculty partner program — free for the first cohort, in exchange for
-  authoring help, eval scaffolding, and catalog placement.
-- Per-student API access or per-course license once a pack is published.
-- Institutional / departmental licenses (the existing Stage 6 enterprise console
-  was designed for licensing flows; repurpose for universities).
+Business model: enterprise contracts ($50K–$2M ACV) + design partner program
+($25–50K co-creation) + runtime API (pay-per-call).
 
 ## Build phases
 

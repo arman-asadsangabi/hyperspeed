@@ -13,9 +13,6 @@ export default function HomePage() {
             </span>
           </div>
           <nav className="flex items-center gap-6 text-sm text-[var(--color-slate-soft)]">
-            <Link href="/pricing" className="hover:text-[var(--color-ink)]">
-              Pricing
-            </Link>
             <Link href="/docs" className="hover:text-[var(--color-ink)]">
               Docs
             </Link>
@@ -35,22 +32,22 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="max-w-3xl">
           <p className="mb-4 text-sm font-medium uppercase tracking-wider text-[var(--color-primary-deep)]">
-            For professors and the students who learn from them
+            B2B for AI companies
           </p>
           <h1 className="text-balance text-5xl font-semibold leading-tight tracking-tight text-[var(--color-ink)] md:text-6xl">
             {BRAND.tagline}.
           </h1>
           <p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-[var(--color-slate-soft)]">
-            Professors package their course knowledge into licensable expertise packs. Students plug
-            them into ChatGPT, Claude, Cursor, or any AI tool — and get answers in their actual
-            professor&apos;s voice and framing, not generic web results.
+            Verified domain experts package their knowledge into structured memory packs. AI
+            companies license those packs via API to inject specialist context into their agents at
+            runtime.
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <Link
               href="/design-partners"
               className="rounded-md bg-[var(--color-primary)] px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-deep)]"
             >
-              Become a faculty partner
+              Apply as design partner
             </Link>
             <Link
               href="/docs"
@@ -64,16 +61,16 @@ export default function HomePage() {
         <div className="mt-24 grid gap-6 md:grid-cols-3">
           {[
             {
-              title: 'Authoritative',
-              body: "Every pack is authored by the actual professor, versioned, and eval-gated. Students get the syllabus' framing — not whatever the model trained on.",
+              title: 'Verified expertise',
+              body: 'Every pack is authored by a credentialed domain expert and gated on automated eval scores.',
             },
             {
-              title: 'Plug-and-play',
-              body: 'Add it to ChatGPT, Claude Desktop, Cursor, or your own app with one API key. Sub-second responses. No prompt engineering required.',
+              title: 'Runtime API',
+              body: 'Sub-200ms p95 query latency. Inject specialist context into your agents without ballooning context windows.',
             },
             {
-              title: 'Course-aligned',
-              body: 'Cite the lecture, point to the textbook chapter, mirror the rubric. Built for studying, not for replacing thinking.',
+              title: 'Audit-grade',
+              body: 'Versioned packs, full citation chains, per-call provenance. Built for regulated industries.',
             },
           ].map((card) => (
             <div
@@ -94,7 +91,7 @@ export default function HomePage() {
           <span>
             &copy; {new Date().getFullYear()} {BRAND.name}
           </span>
-          <span>Pre-launch &middot; faculty partners only</span>
+          <span>Pre-launch &middot; design partners only</span>
         </div>
       </footer>
     </main>

@@ -178,10 +178,9 @@ export default function DocsPage() {
               Build with Hyperspeed
             </h1>
             <p className="mt-4 text-lg leading-relaxed text-[var(--color-slate-soft)]">
-              Hyperspeed lets professors package their course expertise into structured packs.
-              Students (and any AI tool — ChatGPT, Claude, Cursor, your own agent) query those packs
-              at runtime to get answers in their actual professor&apos;s voice instead of generic
-              web results.
+              Hyperspeed is expertise infrastructure for AI companies. Verified domain experts
+              package their knowledge into structured memory packs. Your agents query those packs at
+              runtime to inject specialist context.
             </p>
           </section>
 
@@ -197,11 +196,11 @@ export default function DocsPage() {
                 and an organization.
               </li>
               <li>
-                License a pack from the catalog (or, if you&apos;re a professor, become a{' '}
+                License a pack from the catalog (or co-create one through the{' '}
                 <Link className="text-[var(--color-primary)] underline" href="/design-partners">
-                  faculty partner
-                </Link>{' '}
-                and publish your own).
+                  design partner program
+                </Link>
+                ).
               </li>
               <li>
                 Generate an API key in{' '}
@@ -218,31 +217,28 @@ export default function DocsPage() {
             </h2>
             <dl className="grid gap-4 sm:grid-cols-2">
               <Concept term="Pack">
-                A container of structured course knowledge for one subject (Intro Econ, Real
-                Property, Organic Chem, etc.). Packs are versioned and immutable once published.
+                A container of structured expert knowledge for a domain (tax, legal, medical, etc.).
+                Packs are versioned and immutable once published.
               </Concept>
               <Concept term="Entry">
                 One unit of knowledge inside a pack. Six types: fact, heuristic, decision_rule,
-                example, citation, meta_rule. Maps cleanly to lecture points, rules of thumb, worked
-                examples, and textbook citations.
+                example, citation, meta_rule.
               </Concept>
               <Concept term="Version">
                 A snapshot of pack entries. States: draft → in_review → published → archived.
-                Published versions can&apos;t be edited — version a pack each semester.
+                Published versions can&apos;t be edited.
               </Concept>
               <Concept term="License">
-                A grant from a pack author (the professor) to a student or institution to query the
-                pack at runtime. Tracks call limits, expiration (e.g., end of semester), and tier.
+                A grant from a pack creator (licensor) to a customer (licensee) to query the pack at
+                runtime. Tracks limits, expiration, and SLA tier.
               </Concept>
               <Concept term="Eval gate">
                 Every version must pass an automated eval (overall ≥ 75, accuracy ≥ 80, citation
-                coverage ≥ 60) before it can be published. Catches regressions when you revise
-                between semesters.
+                coverage ≥ 60) before it can be published.
               </Concept>
               <Concept term="Credential">
-                A verified attestation of the author&apos;s academic standing (PhD, faculty
-                appointment, institutional affiliation). Authoring a pack requires at least one
-                verified credential.
+                A verified attestation of a creator&apos;s expertise (CPA license, MD, JD, etc.).
+                Authoring a pack requires at least one verified credential.
               </Concept>
             </dl>
           </section>

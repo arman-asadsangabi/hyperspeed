@@ -44,7 +44,7 @@ export function BillingControls({
           onClick={() => go('/api/billing/checkout')}
           className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[var(--color-primary-deep)] disabled:opacity-60"
         >
-          {pending ? 'Loading…' : canQuery ? 'Restart subscription' : 'Subscribe — $5 / month'}
+          {pending ? 'Loading…' : canQuery ? 'Restart subscription' : 'Subscribe'}
         </button>
       )}
       {error ? <p className="text-xs text-red-700">{error}</p> : null}

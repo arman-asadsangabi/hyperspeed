@@ -18,7 +18,7 @@ export default async function BillingPage({
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-ink)]">Billing</h1>
         <p className="mt-1 text-sm text-[var(--color-slate-soft)]">
-          $5/month gives this organization unlimited API access to query Hyperspeed packs.
+          Manage your organization&apos;s subscription and runtime API access.
         </p>
       </div>
 
@@ -44,7 +44,7 @@ export default async function BillingPage({
               {billing.isPlatformAdmin
                 ? 'Platform admin (complimentary)'
                 : billing.status === 'active' || billing.status === 'trialing'
-                  ? 'Student — $5 / month'
+                  ? `Subscription — ${billing.planType}`
                   : 'No active subscription'}
             </div>
             <div className="mt-2 text-sm text-[var(--color-slate-soft)]">
@@ -76,12 +76,10 @@ export default async function BillingPage({
           What you get
         </h2>
         <ul className="mt-4 grid gap-2 text-sm text-[var(--color-ink)] sm:grid-cols-2">
-          <li>• Unlimited queries against any licensed pack</li>
-          <li>• Works in ChatGPT, Claude Desktop, Cursor, MCP-aware tools</li>
-          <li>• Direct API + TypeScript SDK access</li>
-          <li>• Citations to the exact lecture / chapter the answer came from</li>
-          <li>• Cancel anytime from the Stripe portal</li>
-          <li>• Refunds within 7 days for accidental charges</li>
+          <li>• Runtime API queries against any licensed pack</li>
+          <li>• Works with the TypeScript SDK and the MCP server</li>
+          <li>• Per-call provenance for every response</li>
+          <li>• Manage payment method and invoices in Stripe</li>
         </ul>
       </section>
     </div>
